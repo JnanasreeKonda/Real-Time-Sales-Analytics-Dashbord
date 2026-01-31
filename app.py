@@ -6,8 +6,8 @@ from engine.processor import preprocess_incoming_row
 
 # Page Setup
 st.set_page_config(page_title="Global Sales Analytics", layout="wide")
-st.title("🌍 Global Sales Analytics")
-st.markdown("Real-time analytics from start to current data point")
+st.title("🌍 Real-Time Sales Analytics Dashboard")
+st.markdown("Real-time analytics from start to current time")
 
 # Session State
 if 'buffer' not in st.session_state:
