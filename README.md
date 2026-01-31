@@ -40,4 +40,4 @@ git clone https://github.com/<username>/real-time-sales-dashboard.git
 cd real-time-sales-dashboard
 pip install -r requirements.txt
 streamlit run app.py
-'''
+
