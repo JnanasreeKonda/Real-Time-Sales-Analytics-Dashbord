@@ -2,21 +2,20 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import time
-from engine.calculations import get_live_metrics
 from engine.processor import preprocess_incoming_row
 
-# --- Page Setup ---
+# Page Setup
 st.set_page_config(page_title="Global Sales Analytics", layout="wide")
 st.title("🌍 Global Sales Analytics")
 st.markdown("Real-time analytics from start to current data point")
 
-# --- Session State ---
+# Session State
 if 'buffer' not in st.session_state:
     st.session_state.buffer = pd.DataFrame()
 if 'count' not in st.session_state:
     st.session_state.count = 0
 
-# --- Sidebar Controls ---
+# Sidebar Controls
 st.sidebar.header("Dashboard Controls")
 sim_speed = st.sidebar.select_slider(
     "Stream Speed (seconds per update)",
@@ -29,7 +28,7 @@ if st.sidebar.button("Reset Global Stream"):
     st.session_state.buffer = pd.DataFrame()
     st.rerun()
 
-# --- Load Data ---
+# Load Data
 @st.cache_data
 def get_data():
     df = pd.read_excel('data/online_retail.xlsx')
@@ -38,7 +37,7 @@ def get_data():
 
 source_df = get_data()
 
-# --- Layout Placeholders ---
+# Layout Placeholders
 kpi_placeholder = st.empty()
 
 st.subheader("Revenue by Country (%)")
@@ -74,7 +73,7 @@ for i in range(st.session_state.count, len(source_df)):
     if i % UPDATE_EVERY == 0 and not st.session_state.buffer.empty:
         df = st.session_state.buffer.copy()
 
-        # --- Rename columns for clarity ---
+        # Rename columns for clarity
         df = df.rename(columns={
             'Description': 'Product',
             'Quantity': 'Units Sold',
@@ -83,7 +82,7 @@ for i in range(st.session_state.count, len(source_df)):
             'UniqueCustomers': 'Unique_Customers',
         })
 
-        # --- KPIs ---
+        # KPIs
         total_revenue = df['Revenue'].sum()
         total_units = int(df['Units Sold'].sum())
         total_orders = len(df)
@@ -100,7 +99,7 @@ for i in range(st.session_state.count, len(source_df)):
             c5.metric("Unique Customers", unique_customers)
             c6.metric("Average Order Value", f"${aov:,.2f}")
 
-        # --- Revenue by Country Pie Chart ---
+        # Revenue by Country Pie Chart
         country_stats = df.groupby("Country").agg(
             Revenue=('Revenue', 'sum'),
             Orders=('Product', 'count'),
@@ -119,7 +118,7 @@ for i in range(st.session_state.count, len(source_df)):
         )
         pie_placeholder.altair_chart(pie_chart, use_container_width=True)
 
-        # --- Top 5 Products by Units Sold ---
+        # Top 5 Products by Units Sold
         top_units = df.groupby("Product")['Units Sold'].sum().reset_index().sort_values('Units Sold', ascending=False).head(5)
         bar_units = alt.Chart(top_units).mark_bar().encode(
             x='Units Sold:Q',
@@ -129,7 +128,7 @@ for i in range(st.session_state.count, len(source_df)):
         ).properties(height=250)
         bar_units_placeholder.altair_chart(bar_units, use_container_width=True)
 
-        # --- Top 5 Products by Revenue ---
+        # Top 5 Products by Revenue
         top_revenue = df.groupby("Product")['Revenue'].sum().reset_index().sort_values('Revenue', ascending=False).head(5)
         bar_revenue = alt.Chart(top_revenue).mark_bar().encode(
             x='Revenue:Q',
@@ -139,7 +138,7 @@ for i in range(st.session_state.count, len(source_df)):
         ).properties(height=250)
         bar_revenue_placeholder.altair_chart(bar_revenue, use_container_width=True)
 
-        # --- Revenue Over Time Line Chart ---
+        # Revenue Over Time Line Chart
         df_sorted = df.sort_values('InvoiceDate')
         df_sorted['CumulativeRevenue'] = df_sorted['Revenue'].cumsum()
         cum_line = alt.Chart(df_sorted).mark_line(color='green').encode(
@@ -150,11 +149,10 @@ for i in range(st.session_state.count, len(source_df)):
         ).properties(height=250)
         cum_line_placeholder.altair_chart(cum_line, use_container_width=True)
 
-        # --- Orders per Country Bubble Chart ---
+        # Orders per Country Bubble Chart
         bubble_chart = alt.Chart(country_stats).mark_circle(opacity=0.8).encode(
             x=alt.X('Country:N', sort='-y', title="Country"),
             y=alt.Y('Orders:Q', title="Number of Orders"),
-            # Set legend=None here to hide the bubbles on the right
             size=alt.Size('Orders:Q', scale=alt.Scale(range=[100, 1000]), legend=None),
             color=alt.Color('Country:N', legend=alt.Legend(title="Country")),
             tooltip=['Country', 'Orders']
@@ -162,7 +160,7 @@ for i in range(st.session_state.count, len(source_df)):
 
         orders_placeholder.altair_chart(bubble_chart, use_container_width=True)
 
-        # --- Unique Customers per Country Heatmap ---
+        # Unique Customers per Country Heatmap
         heatmap = alt.Chart(country_stats).mark_rect().encode(
             x='Country:N',
             y='Unique_Customers:Q',
@@ -172,7 +170,7 @@ for i in range(st.session_state.count, len(source_df)):
 
         customers_placeholder.altair_chart(heatmap, use_container_width=True)
 
-        # --- Revenue Table by Country (with Orders & Unique Customers) ---
+        # Revenue Table by Country (with Orders & Unique Customers)
         table_placeholder.dataframe(
             country_stats.sort_values('Revenue', ascending=False),
             use_container_width=True
